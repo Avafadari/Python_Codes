@@ -1,0 +1,5 @@
+Sudo dscl . list /users
+
+sudo dscl . delete /Users/testy
+
+sudo rm -r /Users/testy 
