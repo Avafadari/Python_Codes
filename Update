@@ -1,0 +1,68 @@
+import win32com.client
+import win32con
+import win32api
+import pywintypes
+import re
+
+def enum_winupdates():
+    wua = win32com.client.Dispatch("Microsoft.Update.Session")
+    update_seeker = wua.CreateUpdateSearcher()
+    # Search installed Software Windows Updates
+    search_installed = update_seeker.Search("IsInstalled=1 and Type='Software'")
+    updates_installed = win32com.client.Dispatch("Microsoft.Update.UpdateColl")
+    print("\n[+] Enumerating installed Windows or Drivers' Updates...(if any)\n")
+    installed_updates = []
+    installed_categories = []
+    available_updates = []
+    available_categories = []
+    installed_dict = {}
+    available_dict = {}
+    # compiles the regex pattern for finding Windows Update codes
+    updates_pattern = re.compile(r'KB+\d+')
+    for i in range(0, (len(search_installed.Updates))):
+        # saves installed update name in a variable
+        update_installed = search_installed.Updates.Item(i)
+        for j in range(0, len(update_installed.Categories)):
+            # extracts Windows Update code using regex
+            update_code = updates_pattern.findall(str(update_installed))
+            # saves installed update category in a variable
+            category = update_installed.Categories.Item(j).Name
+            print("[*] Name: " + str(update_installed) + " - " +
+                  "url: " + "https://support.microsoft.com/en-us/kb/{}".format(
+                "".join(update_code).strip("KB")) + " - " +
+                  "Category: " + category)
+            installed_updates.append(str(update_installed))
+            installed_categories.append(category)
+    # converts lists to tuples in order to be used as a dictionary key
+    installed_hashable = tuple(installed_updates)
+    installed_hashable_category = tuple(installed_categories)
+    # creates category:update dictionary
+    for update in installed_hashable:
+        for category_update in installed_hashable_category:
+            installed_dict[category_update] = str(update)
+
+    # Searches available Software Windows updates not installed
+    search_available = update_seeker.Search("IsInstalled=0 and Type='Software'")
+    updates_available = win32com.client.Dispatch("Microsoft.Update.UpdateColl")
+    print("\n[+] Enumerating available Windows or Drivers' Updates not installed...(if any)\n")
+    for i in range(0, (len(search_available.Updates))):
+        update_available = search_available.Updates.Item(i)
+        for j in range(0, len(updates_available.Categories)):
+            # extracts Windows Update code using regex
+            update_code = updates_pattern.findall(str(update_available))
+            # saves installed update category in a variable
+            category = updates_available.Categories.Item(j).Name
+            print("[*] Name: " + str(update_available) + " - " +
+                  "url: " + "https://support.microsoft.com/en-us/kb/{}".format(
+                "".join(update_code).strip("KB")) + " - " +
+                  "Category: " + category)
+            available_updates.append(str(update_available))
+            available_categories.append(category)
+    # converts lists to tuples in order to be used as a dictionary key
+    available_hashable = tuple(available_updates)
+    available_hashable_category = tuple(available_categories)
+    # creates category:update dictionary
+    for update in available_hashable:
+        for category_update in available_hashable_category:
+            available_dict[category_update] = str(update)
+    return installed_dict, available_dict
